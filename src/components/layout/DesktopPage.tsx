@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { useEffect, type ReactNode } from 'react';
 
 /** Root for desktop screens: fluid, at least one viewport tall. */
@@ -17,7 +17,7 @@ export function DesktopPage({
     document.title = `${title} · ES Bot`;
   }, [title]);
   return (
-    <div className={clsx('flex min-h-dvh bg-paper', direction === 'row' ? 'flex-wrap' : 'flex-col', className)}>
+    <div className={cn('flex min-h-dvh bg-paper', direction === 'row' ? 'flex-wrap' : 'flex-col', className)}>
       {children}
     </div>
   );

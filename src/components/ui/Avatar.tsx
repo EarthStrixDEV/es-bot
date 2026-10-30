@@ -1,11 +1,11 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 
 /** Bots are represented by a solid color disc (no faces/emoji). */
 export function BotAvatar({ color, size = 32, className }: { color: string; size?: number; className?: string }) {
   return (
     <span
       aria-hidden="true"
-      className={clsx('block shrink-0 rounded-full', className)}
+      className={cn('block shrink-0 rounded-full', className)}
       style={{ width: size, height: size, background: color }}
     />
   );
@@ -29,7 +29,7 @@ export function PersonAvatar({ initial, size = 28, dark }: { initial: string; si
   return (
     <span
       aria-hidden="true"
-      className={clsx(
+      className={cn(
         'flex shrink-0 items-center justify-center rounded-full text-xs font-semibold',
         dark ? 'bg-ink text-paper' : 'bg-line text-ink',
       )}

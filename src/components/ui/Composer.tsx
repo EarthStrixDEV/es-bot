@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
 import { Icon } from './Icon';
 
@@ -34,7 +34,7 @@ export function Composer({
   return (
     <form
       onSubmit={submit}
-      className={clsx(
+      className={cn(
         'flex items-center gap-2 rounded-full shadow-ring focus-within:shadow-ring-ink',
         leading ? 'py-1 pl-1.5 pr-1' : 'py-1.5 pl-4 pr-1.5',
         className,
@@ -50,7 +50,7 @@ export function Composer({
         value={text}
         onChange={(e) => setText(e.target.value)}
         placeholder={placeholder}
-        className={clsx('min-w-0 flex-1 border-0 bg-transparent outline-none', size === 'lg' ? 'h-10 text-[15px]' : 'h-9 text-sm')}
+        className={cn('min-w-0 flex-1 border-0 bg-transparent outline-none', size === 'lg' ? 'h-10 text-[15px]' : 'h-9 text-sm')}
       />
       <button
         type="submit"

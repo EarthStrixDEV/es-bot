@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 
 /** Rounded horizontal progress track. `color` defaults to the accent. */
 export function Meter({
@@ -21,10 +21,10 @@ export function Meter({
       aria-valuenow={value}
       aria-valuemin={0}
       aria-valuemax={100}
-      className={clsx('overflow-hidden rounded-full bg-chip', className)}
+      className={cn('overflow-hidden rounded-full bg-chip', className)}
       style={{ height }}
     >
-      <div className={clsx('h-full', !color && 'bg-accent')} style={{ width: `${value}%`, background: color }} />
+      <div className={cn('h-full', !color && 'bg-accent')} style={{ width: `${value}%`, background: color }} />
     </div>
   );
 }

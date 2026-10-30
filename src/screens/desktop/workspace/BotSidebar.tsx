@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { Link } from 'react-router-dom';
 import { BotAvatar, GroupAvatar, Icon, IconButton, PersonAvatar } from '@/components/ui';
 import { needsYou, salesFork, team, user, type BotListItem } from '@/lib/data';
@@ -15,15 +15,15 @@ function BotRow({ bot, active }: { bot: BotListItem; active?: boolean }) {
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="flex justify-between gap-2">
           <span className="font-semibold">{bot.name}</span>
-          <span className={clsx('text-xs', bot.timeTone === 'accent' ? 'text-accent' : 'text-muted')}>{bot.time}</span>
+          <span className={cn('text-xs', bot.timeTone === 'accent' ? 'text-accent' : 'text-muted')}>{bot.time}</span>
         </span>
-        <span className={clsx('text-xs', bot.statusTone === 'warn' ? 'font-medium text-warn' : 'text-muted')}>
+        <span className={cn('text-xs', bot.statusTone === 'warn' ? 'font-medium text-warn' : 'text-muted')}>
           {bot.status}
         </span>
       </span>
     </>
   );
-  const cls = clsx(
+  const cls = cn(
     'flex items-start gap-2.5 rounded-xl px-2 py-2.5 text-left no-underline !text-ink',
     active ? 'bg-paper shadow-ring' : 'hover:bg-paper/60',
   );
@@ -32,7 +32,7 @@ function BotRow({ bot, active }: { bot: BotListItem; active?: boolean }) {
       {body}
     </Link>
   ) : (
-    <button type="button" className={clsx(cls, 'w-full cursor-pointer border-0 bg-transparent')}>
+    <button type="button" className={cn(cls, 'w-full cursor-pointer border-0 bg-transparent')}>
       {body}
     </button>
   );

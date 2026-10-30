@@ -4,6 +4,18 @@ import type { Config } from 'tailwindcss';
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
+    // Sizes only: line-height is inherited (1.5 desktop, 1.45 mobile) as in the design.
+    fontSize: {
+      '2xs': '11px',
+      xs: '12px',
+      sm: '14px',
+      base: '16px',
+      lg: '18px',
+      xl: '20px',
+      '2xl': '24px',
+      '3xl': '28px',
+      '4xl': '32px',
+    },
     extend: {
       colors: {
         ink: '#0A0A0A',

@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { ButtonHTMLAttributes } from 'react';
 import { Link, type LinkProps } from 'react-router-dom';
 
@@ -22,7 +22,7 @@ const sizes: Record<ButtonSize, string> = {
 };
 
 export function buttonClass(variant: ButtonVariant = 'secondary', size: ButtonSize = 'lg', className?: string) {
-  return clsx(
+  return cn(
     'inline-flex items-center justify-center gap-1.5 rounded-full border-0 cursor-pointer no-underline transition-colors whitespace-nowrap',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     variants[variant],
@@ -44,5 +44,5 @@ export function ButtonLink({
   className,
   ...rest
 }: LinkProps & { variant?: ButtonVariant; size?: ButtonSize }) {
-  return <Link className={clsx(buttonClass(variant, size, className), 'hover:text-current', variant === 'primary' ? '!text-paper' : '!text-ink')} {...rest} />;
+  return <Link className={cn(buttonClass(variant, size, className), 'hover:text-current', variant === 'primary' ? '!text-paper' : '!text-ink')} {...rest} />;
 }

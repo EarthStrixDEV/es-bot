@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { ReactNode } from 'react';
 
 /** Chat bubble. `out` = the user (ink, right); `in` = the bot (sand, left). */
@@ -13,7 +13,7 @@ export function Bubble({
 }) {
   return (
     <div
-      className={clsx(
+      className={cn(
         'px-4 py-2.5',
         from === 'out'
           ? 'max-w-[78%] self-end rounded-bubble-out bg-ink text-paper'

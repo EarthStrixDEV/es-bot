@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { ReactNode } from 'react';
 
 export type PillTone = 'neutral' | 'outline' | 'accent' | 'ok' | 'warn' | 'danger' | 'ink';
@@ -27,7 +27,7 @@ export function Pill({
 }) {
   return (
     <span
-      className={clsx(
+      className={cn(
         'inline-flex items-center rounded-full px-2.5 py-[3px] text-xs',
         mono && 'font-mono',
         tones[tone],

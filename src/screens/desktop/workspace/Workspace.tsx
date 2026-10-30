@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { useState } from 'react';
 import { DesktopPage } from '@/components/layout/DesktopPage';
 import { BotAvatar, Bubble, Button, ButtonLink, Card, Composer, Icon, IconButton, Pill, StatTile } from '@/components/ui';
@@ -70,15 +70,15 @@ export function Workspace() {
               {plan.map((s, i) => (
                 <li key={s.label} className="flex items-center gap-2.5">
                   <span
-                    className={clsx(
+                    className={cn(
                       'flex h-5 w-5 items-center justify-center rounded-full text-[11px]',
                       s.done ? 'bg-ok text-paper' : 'font-semibold text-warn shadow-[inset_0_0_0_2px_#B45309]',
                     )}
                   >
                     {s.done ? '✓' : i + 1}
                   </span>
-                  <span className={clsx('flex-1', !s.done && 'font-medium')}>{s.label}</span>
-                  <span className={clsx('font-mono text-[11px]', s.done ? 'text-muted' : 'text-warn')}>{s.kind}</span>
+                  <span className={cn('flex-1', !s.done && 'font-medium')}>{s.label}</span>
+                  <span className={cn('font-mono text-[11px]', s.done ? 'text-muted' : 'text-warn')}>{s.kind}</span>
                 </li>
               ))}
             </ol>

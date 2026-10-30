@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { NavLink } from 'react-router-dom';
 import { Icon, type IconName } from '@/components/ui';
 import { routes } from '@/lib/routes';
@@ -22,7 +22,7 @@ export function MobileTabBar({ active }: { active?: string }) {
           aria-current={active ? (active === t.to ? 'page' : undefined) : undefined}
           className={({ isActive }) => {
             const on = active ? active === t.to : isActive;
-            return clsx(
+            return cn(
               'flex min-h-[52px] flex-col items-center justify-center gap-0.5 text-[11px] no-underline',
               on ? 'font-semibold !text-ink' : '!text-muted',
             );

@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { ButtonHTMLAttributes } from 'react';
 import { Link } from 'react-router-dom';
 import { Icon, type IconName } from './Icon';
@@ -22,7 +22,7 @@ type Common = {
 };
 
 function cls(tone: Tone, className?: string) {
-  return clsx(
+  return cn(
     'inline-flex shrink-0 items-center justify-center rounded-full border-0 cursor-pointer transition-colors',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     tones[tone],
@@ -50,7 +50,7 @@ export function IconButton({
 
 export function IconLink({ icon, label, tone = 'soft', size = 36, iconSize = 16, strokeWidth, className, to }: Common & { to: string }) {
   return (
-    <Link to={to} aria-label={label} className={clsx(cls(tone, className), tone === 'primary' ? '!text-paper' : '!text-ink')} style={{ width: size, height: size }}>
+    <Link to={to} aria-label={label} className={cn(cls(tone, className), tone === 'primary' ? '!text-paper' : '!text-ink')} style={{ width: size, height: size }}>
       <Icon name={icon} size={iconSize} strokeWidth={strokeWidth} />
     </Link>
   );

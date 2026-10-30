@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import { useEffect, type ReactNode } from 'react';
 
 /**
@@ -12,7 +12,7 @@ export function MobileScreen({ title, className, children }: { title?: string; c
   return (
     <div className="flex min-h-dvh justify-center bg-sand sm:items-center sm:py-8">
       <div
-        className={clsx(
+        className={cn(
           'relative flex h-dvh w-full max-w-[390px] flex-col overflow-hidden bg-paper text-[15px] leading-[1.45] sm:h-[844px] sm:rounded-[28px] sm:shadow-ring',
           className,
         )}

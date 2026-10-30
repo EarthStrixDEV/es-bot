@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { ReactNode } from 'react';
 
 /** "label …… value" row used in summaries and permission lists. */
@@ -16,9 +16,9 @@ export function KeyValue({
   className?: string;
 }) {
   return (
-    <div className={clsx('flex justify-between gap-3 text-[13px]', className)}>
+    <div className={cn('flex justify-between gap-3 text-[13px]', className)}>
       <span>{k}</span>
-      <span className={clsx('text-right', mono && 'font-mono text-xs', valueClass)}>{v}</span>
+      <span className={cn('text-right', mono && 'font-mono text-xs', valueClass)}>{v}</span>
     </div>
   );
 }
@@ -39,14 +39,14 @@ export function StatTile({
 }) {
   return (
     <div
-      className={clsx(
+      className={cn(
         'flex flex-col rounded-[10px] px-2.5 py-2',
         tone === 'sand' ? 'bg-sand' : 'shadow-ring',
         className,
       )}
     >
       <span className="text-[11px] text-muted">{label}</span>
-      <span className={clsx('text-[13px] font-medium', valueClass)}>{value}</span>
+      <span className={cn('text-[13px] font-medium', valueClass)}>{value}</span>
     </div>
   );
 }

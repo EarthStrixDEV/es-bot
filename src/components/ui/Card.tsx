@@ -1,4 +1,4 @@
-import clsx from 'clsx';
+import { cn } from '@/lib/cn';
 import type { HTMLAttributes } from 'react';
 
 type Variant = 'ring' | 'sand' | 'paper' | 'accent';
@@ -16,5 +16,5 @@ export function Card({
   className,
   ...rest
 }: HTMLAttributes<HTMLElement> & { as?: 'section' | 'div' | 'article' | 'aside'; variant?: Variant }) {
-  return <Tag className={clsx('flex flex-col rounded-2xl p-4', variants[variant], className)} {...rest} />;
+  return <Tag className={cn('flex flex-col rounded-2xl p-4', variants[variant], className)} {...rest} />;
 }
