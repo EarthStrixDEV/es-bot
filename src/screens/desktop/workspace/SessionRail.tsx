@@ -22,8 +22,21 @@ const passport = [
   { name: 'Browser profile', scope: 'sales-only', tone: 'text-muted' },
 ];
 
-export function SessionRail() {
+/** Live values from the gateway; without them the rail shows the design's demo state. */
+export type RailData = {
+  status: string;
+  budget: number;
+  changes?: string;
+  checkpoints?: { id: string; label: string; rollback?: boolean }[];
+  grants: { name: string; scope: string; tone: string }[];
+};
+
+export function SessionRail({ data }: { data?: RailData }) {
   const [view, setView] = useState<(typeof views)[number]['value']>('run');
+  const status = data?.status ?? 'รอพี่อนุมัติ · ขั้น 4 / 4';
+  const budget = data?.budget ?? 31;
+  const rows = data?.checkpoints ?? checkpoints.map((c) => ({ ...c, id: String(c.id) }));
+  const grants = data?.grants ?? passport;
 
   return (
     <aside aria-label="Session rail" className="flex max-w-[420px] shrink grow basis-[360px] flex-col gap-4 bg-paper px-5 py-4">
@@ -35,38 +48,47 @@ export function SessionRail() {
 
       <div className="flex flex-col gap-1">
         <span className="text-xs text-muted">สถานะ run</span>
-        <span className="text-[15px] font-semibold">รอพี่อนุมัติ · ขั้น 4 / 4</span>
+        <span className="text-[15px] font-semibold">{status}</span>
       </div>
 
       <div className="flex flex-col gap-1.5">
         <div className="flex justify-between">
           <span className="text-[13px] font-medium">งบของ run นี้</span>
-          <span className="font-mono text-xs">31% ของเพดาน</span>
+          <span className="font-mono text-xs">{budget}% ของเพดาน</span>
         </div>
-        <Meter value={31} label="งบของ run นี้" />
+        <Meter value={budget} label="งบของ run นี้" />
         <span className="text-xs text-muted">ถึงเพดานแล้วหยุดทันที แม้อยู่กลาง run</span>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <div className="flex justify-between">
-          <span className="text-[13px] font-medium">Context</span>
-          <span className="font-mono text-xs">42%</span>
+      {/* Context usage is tracked from phase 3; live mode leaves it out rather than show a made-up number. */}
+      {!data && (
+        <div className="flex flex-col gap-1.5">
+          <div className="flex justify-between">
+            <span className="text-[13px] font-medium">Context</span>
+            <span className="font-mono text-xs">42%</span>
+          </div>
+          <Meter value={42} label="Context ที่ใช้" color="#0A0A0A" />
+          <span className="text-xs text-muted">เกิน 80% จะสรุปบริบทเก่าให้อัตโนมัติ · side chat ไม่กินบริบทหลัก</span>
         </div>
-        <Meter value={42} label="Context ที่ใช้" color="#0A0A0A" />
-        <span className="text-xs text-muted">เกิน 80% จะสรุปบริบทเก่าให้อัตโนมัติ · side chat ไม่กินบริบทหลัก</span>
-      </div>
+      )}
 
       <div className="flex items-center justify-between rounded-xl px-3 py-2.5 shadow-ring">
         <span className="text-[13px] font-medium">Changes</span>
         <span className="font-mono text-xs">
-          <span className="text-ok">+22 drafts</span> · <span className="text-muted">0 sent</span>
+          {data ? (
+            <span className="text-ok">{data.changes ?? '—'}</span>
+          ) : (
+            <>
+              <span className="text-ok">+22 drafts</span> · <span className="text-muted">0 sent</span>
+            </>
+          )}
         </span>
       </div>
 
       <div className="flex flex-col gap-2">
         <span className="text-[13px] font-medium">Checkpoints</span>
         <ol className="ml-1.5 flex list-none flex-col border-l-2 border-line p-0 pl-3.5">
-          {checkpoints.map((c) => (
+          {rows.map((c) => (
             <li key={c.id} className="flex justify-between gap-2 py-1">
               <span className="text-[13px]">{c.label}</span>
               {c.rollback ? (
@@ -90,7 +112,7 @@ export function SessionRail() {
         </div>
         <span className="text-xs text-muted">sandbox แยกของ Sales Outbound · Bot อื่นเข้าถึงไม่ได้</span>
         <div className="flex flex-col gap-1.5">
-          {passport.map((p) => (
+          {grants.map((p) => (
             <KeyValue key={p.name} k={p.name} v={p.scope} mono valueClass={p.tone} />
           ))}
         </div>

@@ -5,4 +5,8 @@ import { fileURLToPath, URL } from 'node:url';
 export default defineConfig({
   plugins: [react()],
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+  server: {
+    // Gateway (npm run dev:server) on :8787.
+    proxy: { '/api': { target: 'http://localhost:8787', ws: true } },
+  },
 });
