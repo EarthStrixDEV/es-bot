@@ -56,6 +56,6 @@ export class MockModel implements ModelClient {
 
   async reply(history: Message[]): Promise<string> {
     const last = history.filter((m) => m.role === 'user').at(-1)?.content ?? '';
-    return `รับทราบค่ะ: "${last.slice(0, 80)}" — งานนี้ไม่ต้องใช้ tool เลยตอบได้ทันที (โหมด mock: ตั้ง MODEL_API_KEY เพื่อใช้โมเดลจริง)`;
+    return `รับทราบค่ะ: "${last.slice(0, 80)}" — งานนี้ไม่ต้องใช้ tool เลยตอบได้ทันที (โหมด mock: ตั้ง OPENROUTER_API_KEY เพื่อใช้โมเดลจริง)`;
   }
 }

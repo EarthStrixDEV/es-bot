@@ -13,7 +13,8 @@ npm run typecheck
 
 Without the gateway running, every screen shows the design's demo state. With it, the Workspace
 (`/`) is live: send *"ดึงร้านอาหารในชลบุรีจาก Google Sheet แล้วร่างข้อความ LINE OA …"* to watch a run
-plan, wait for approval, send a canary and finish. Copy `.env.example` to `.env` for real services.
+plan, wait for approval, send a canary and finish. Copy `.env.example` to `.env` for real services. Models are called through **OpenRouter only**
+(`OPENROUTER_API_KEY`, `OPENROUTER_MODEL`, `OPENROUTER_FALLBACK_MODELS`; see ADR-0002).
 
 ## Harness — phase 1 (MVP)
 

@@ -38,7 +38,7 @@
 | Credential Broker | `credentials/` | vault เข้ารหัส AES-256-GCM, lease อายุสั้นใช้ครั้งเดียว |
 | Connector Gateway | `connectors/` | registry + สแกน prompt injection + `desc_hash` + output filter |
 | Notifier | `notifier/` | LINE Messaging API adapter / console mock |
-| Model access | `models/` | OpenAI-compatible adapter (OpenRouter) / mock planner |
+| Model access | `models/` | OpenRouter adapter / mock planner (ดู ADR-0002) |
 
 Persistence อยู่หลัง `Store` port: ตอนนี้ใช้ SQLite (`node:sqlite`, ไฟล์เดียว) เพื่อให้ durable จริง
 และมี `server/db/migrations/001_init.sql` สำหรับ Supabase Postgres + RLS ตาม Data Model ในเอกสาร

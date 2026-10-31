@@ -7,7 +7,7 @@ export type StepContext = {
   previous: { title: string; output: unknown }[];
 };
 
-/** Model access through an OpenAI-compatible gateway. Phase 3 puts the Model Router in front. */
+/** Model access (OpenRouter in production, a mock without a key). Phase 3 puts the Model Router in front. */
 export interface ModelClient {
   readonly name: string;
   /** Break a request into tool steps, or return null when a plain reply is enough. */

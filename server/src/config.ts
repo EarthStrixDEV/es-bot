@@ -16,8 +16,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env) {
     blastThreshold: Number(env.BLAST_THRESHOLD ?? 20),
     rateLimitPerMinute: Number(env.RATE_LIMIT_PER_MINUTE ?? 120),
     line: env.LINE_CHANNEL_TOKEN && env.LINE_USER_ID ? { token: env.LINE_CHANNEL_TOKEN, userId: env.LINE_USER_ID } : undefined,
-    model: env.MODEL_API_KEY
-      ? { baseUrl: env.MODEL_BASE_URL ?? 'https://openrouter.ai/api/v1', apiKey: env.MODEL_API_KEY, name: env.MODEL_NAME ?? 'anthropic/claude-sonnet-5.5' }
+    /** OpenRouter is the only model provider. No key → mock planner. */
+    openrouter: env.OPENROUTER_API_KEY
+      ? {
+          apiKey: env.OPENROUTER_API_KEY,
+          model: env.OPENROUTER_MODEL ?? 'openrouter/auto',
+          fallbacks: (env.OPENROUTER_FALLBACK_MODELS ?? '').split(',').map((m) => m.trim()).filter(Boolean),
+        }
       : undefined,
     /** Real MCP servers for the MVP connectors; unset → builtin mock. */
     mcp: {

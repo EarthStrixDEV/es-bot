@@ -14,7 +14,7 @@ import { EventBus } from './domain/events.js';
 import type { Passport } from './domain/types.js';
 import { MockModel } from './models/MockModel.js';
 import type { ModelClient } from './models/ModelClient.js';
-import { OpenAICompatibleModel } from './models/OpenAICompatibleModel.js';
+import { OpenRouterModel } from './models/OpenRouterModel.js';
 import { LineNotifier, MemoryNotifier, type Notifier } from './notifier/Notifier.js';
 import { Orchestrator } from './orchestrator/Orchestrator.js';
 import { createSqliteStore } from './store/SqliteStore.js';
@@ -33,7 +33,7 @@ export async function createApp(
   const audit = new AuditLog(store, clock, config.accountId);
   const notifier = overrides.notifier ?? (config.line ? new LineNotifier(config.line.token, config.line.userId) : new MemoryNotifier());
   const model =
-    overrides.model ?? (config.model ? new OpenAICompatibleModel(config.model.baseUrl, config.model.apiKey, config.model.name) : new MockModel());
+    overrides.model ?? (config.openrouter ? new OpenRouterModel({ ...config.openrouter, appUrl: config.appUrl }) : new MockModel());
   const broker = new CredentialBroker(store, clock, config.masterKey);
   const budget = new BudgetMeter(store, bus);
   const gateway = new ConnectorGateway(store, broker, audit, {
