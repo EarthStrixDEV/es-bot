@@ -40,6 +40,11 @@ export class ConnectorGateway {
     return this.store.tools.list({ connectorId: row.id });
   }
 
+  /** Reconnect the client of a connector already in the registry (after a restart). */
+  attach(connectorId: string, client: ConnectorClient) {
+    this.clients.set(connectorId, client);
+  }
+
   /** Re-read tools/list (also on tools/list_changed). Changed descriptions are disabled until re-approved. */
   async sync(connectorId: string): Promise<ToolDef[]> {
     const client = this.client(connectorId);
@@ -77,9 +82,43 @@ export class ConnectorGateway {
     const t = this.store.tools.get(toolId);
     if (!t) throw new Error('ไม่พบ tool');
     if (t.flagged?.startsWith('prompt injection') && !by.startsWith('user:')) throw new Error('tool ถูกตั้งธงไว้ ต้องให้คนยืนยัน');
+    const connector = this.store.connectors.get(t.connectorId);
+    if (connector?.status === 'disabled') throw new Error('connector ถูกตัดการเชื่อมต่ออยู่ · ทดสอบการเชื่อมต่อก่อน');
     const next = this.store.tools.put({ ...t, ...meta, enabled: true, flagged: undefined });
     this.audit.record({ actor: by, action: 'tool.enable', target: toolId, meta: { effect: next.effect, reversible: next.reversible } });
     return next;
+  }
+
+  /** Turn a tool off. Always allowed, by anyone with access to the account. */
+  disableTool(toolId: string, by: string): ToolDef {
+    const t = this.tool(toolId);
+    const next = this.store.tools.put({ ...t, enabled: false });
+    this.audit.record({ actor: by, action: 'tool.disable', target: toolId });
+    return next;
+  }
+
+  /** Disconnect: every tool off and the connector marked disabled. Grants stay in Passports but match no enabled tool. */
+  disconnect(connectorId: string, by: string) {
+    const row = this.store.connectors.get(connectorId);
+    if (!row) throw new Error('ไม่พบ connector');
+    for (const t of this.store.tools.list({ connectorId })) if (t.enabled) this.store.tools.put({ ...t, enabled: false });
+    this.store.connectors.put({ ...row, status: 'disabled' });
+    this.audit.record({ actor: by, action: 'connector.disconnect', target: connectorId });
+  }
+
+  /** Test the connection by listing tools again; reconnects a disabled connector without turning tools back on. */
+  async test(connectorId: string, by: string): Promise<{ ok: boolean; tools: number; flagged: number; error?: string }> {
+    const row = this.store.connectors.get(connectorId);
+    if (!row) throw new Error('ไม่พบ connector');
+    try {
+      const tools = await this.sync(connectorId);
+      if (row.status !== 'connected') this.store.connectors.put({ ...row, status: 'connected' });
+      this.audit.record({ actor: by, action: 'connector.test', target: connectorId, meta: { ok: true, tools: tools.length } });
+      return { ok: true, tools: tools.length, flagged: tools.filter((t) => t.flagged).length };
+    } catch (err) {
+      this.audit.record({ actor: by, action: 'connector.test', target: connectorId, meta: { ok: false, error: String(err) } });
+      return { ok: false, tools: 0, flagged: 0, error: (err as Error).message };
+    }
   }
 
   tools(): ToolDef[] {

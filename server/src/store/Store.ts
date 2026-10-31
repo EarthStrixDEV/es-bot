@@ -44,6 +44,7 @@ export type PassportRow = Passport & { id: string };
 export interface Store {
   bots: Collection<Bot>;
   passports: Collection<PassportRow>; // id = botId (current version)
+  passportVersions: Collection<PassportRow>; // id = `${botId}@v${version}`, every saved version
   connectors: Collection<ConnectorRow>;
   tools: Collection<ToolDef>;
   secrets: Collection<SecretRow>;

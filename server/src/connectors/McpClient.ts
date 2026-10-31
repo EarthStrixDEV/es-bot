@@ -8,7 +8,12 @@ export class McpClient implements ConnectorClient {
   private seq = 0;
   private ready?: Promise<void>;
 
-  constructor(private url: string, private staticSecret = '', private fetchImpl: typeof fetch = fetch) {}
+  /** `listSecret` authenticates tools/list; tool calls use the per-call leased secret. */
+  constructor(private url: string, private listSecret: string | (() => string) = '', private fetchImpl: typeof fetch = fetch) {}
+
+  private get staticSecret() {
+    return typeof this.listSecret === 'function' ? this.listSecret() : this.listSecret;
+  }
 
   async listTools(): Promise<RawTool[]> {
     const tools: RawTool[] = [];

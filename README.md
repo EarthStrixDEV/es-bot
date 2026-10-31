@@ -12,7 +12,7 @@ Bot ทำงานแทนพี่ได้ แต่ทุก action ต้�
 ![Node](https://img.shields.io/badge/Node-22-2F9E44?style=flat-square&logo=nodedotjs&logoColor=white)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3-0A0A0A?style=flat-square&logo=tailwindcss&logoColor=white)
 ![OpenRouter](https://img.shields.io/badge/models-OpenRouter-7048E8?style=flat-square)
-![Tests](https://img.shields.io/badge/tests-27%20passing-15803D?style=flat-square)
+![Tests](https://img.shields.io/badge/tests-34%20passing-15803D?style=flat-square)
 ![Phase](https://img.shields.io/badge/phase-1%20MVP-E8590C?style=flat-square)
 
 <br>
@@ -92,7 +92,7 @@ npm run dev
 | `npm run dev` | หน้าเว็บที่ `:5173` (proxy `/api` ไปที่ gateway) |
 | `npm run dev:server` | gateway ที่ `:8787` แบบ watch |
 | `npm run start:server` | gateway แบบไม่ watch |
-| `npm test` | test ของ harness ทั้งหมด 27 ข้อ |
+| `npm test` | test ของ harness ทั้งหมด 34 ข้อ |
 | `npm run typecheck` | typecheck ทั้งหน้าเว็บและ server |
 | `npm run build` | build หน้าเว็บ |
 | `npm run build:preview` | build ไฟล์ HTML ไฟล์เดียวสำหรับ preview แบบ static |
@@ -279,18 +279,33 @@ flowchart TB
 | Method | Path | ใช้ทำอะไร |
 |---|---|---|
 | `GET` | `/api/health` | สถานะ, โมเดลที่ใช้, ช่องทางแจ้งเตือน |
-| `GET` | `/api/bots` | รายชื่อ Bot |
-| `GET` | `/api/bots/:id/passport` | Passport ของ Bot |
+| **Bots & Passport** | | |
+| `GET` | `/api/bots` | รายชื่อ Bot (พร้อม `hasPassport`) |
+| `GET` | `/api/bots/:id/passport` | Passport ฉบับปัจจุบัน |
+| `GET` | `/api/bots/:id/passport/versions` | ทุกเวอร์ชันที่เคยบันทึก |
+| `POST` | `/api/bots/:id/passport` | แก้ trust / งบ `{ "trust": { "send": "L1" }, "budget": { "perRun": 80 } }` → เวอร์ชันใหม่ |
+| `POST` | `/api/bots/:id/passport/dry-run` | patch เดียวกัน แต่ไม่บันทึก · บอกว่า tool ไหนจะถูกตัดสินต่างไป |
+| `GET` | `/api/bots/:id/credentials` | สิทธิ์ต่อ connector + ใช้ล่าสุดเมื่อไร |
+| `POST` | `/api/bots/:id/grants` | ให้สิทธิ์ `{ "connectorId", "scope", "level"? }` (ห้าม `pay` / `destroy`) |
+| `POST` | `/api/bots/:id/grants/:connectorId/revoke` | ถอนสิทธิ์ |
+| **แชตและ run** | | |
 | `GET` | `/api/bots/:id/thread` | thread หลัก พร้อมข้อความและ run ทั้งหมด |
 | `POST` | `/api/bots/:id/messages` | ส่งคำสั่ง `{ "text": "…" }` |
-| `GET` | `/api/runs/:id` | run, steps, approvals, checkpoints, งบ |
+| `GET` | `/api/runs` | run ทั้งหมด ใหม่สุดก่อน |
+| `GET` | `/api/runs/:id` | run, คำขอเริ่มต้น, steps, approvals, checkpoints, งบ |
+| `GET` | `/api/runs/:id/audit` | audit trail ของ run นั้น |
 | `GET` | `/api/approvals?state=open` | คำขอที่ยังรอคำตอบ |
 | `POST` | `/api/approvals/:id/decision` | `{ "decision": "approve" \| "approve_canary" \| "reject" }` |
-| `GET` | `/api/connectors` | connector ทั้งหมด (ไม่ส่ง secret ref ออกมา) |
+| **Connectors** | | |
+| `GET` | `/api/connectors` | connector พร้อม tools, Bot ที่ใช้ได้, การใช้งานล่าสุด (ไม่ส่ง secret ออกมา) |
+| `POST` | `/api/connectors` | เพิ่ม Custom MCP `{ "name", "url", "auth": "api_key" \| "none", "apiKey"? }` · ทุก tool ปิด |
+| `POST` | `/api/connectors/:id/test` | list tools ใหม่ (ตรวจ injection ซ้ำ) |
+| `POST` | `/api/connectors/:id/disconnect` | ปิดทุก tool และตัดการเชื่อมต่อ |
 | `GET` | `/api/tools` | tool พร้อม metadata และสถานะ |
-| `POST` | `/api/tools/:id/enable` | ยืนยันและเปิดใช้ tool |
+| `POST` | `/api/tools/:id/enable` | ยืนยันและเปิดใช้ tool (แก้ได้แค่ `effect` / `reversible` / `taskClass`) |
+| `POST` | `/api/tools/:id/disable` | ปิด tool |
 | `GET` | `/api/audit?target=` | audit log ล่าสุด 500 รายการ |
-| `WS` | `/api/events?token=` | event stream: `message.*` `run.*` `step.*` `approval.*` `budget.*` |
+| `WS` | `/api/events?token=` | event stream: `message.*` `run.*` `step.*` `approval.*` `budget.*` `passport.*` `connector.*` `tool.*` |
 
 ```bash
 curl -s localhost:8787/api/bots/sales-outbound/messages \
@@ -324,7 +339,7 @@ curl -s localhost:8787/api/bots/sales-outbound/messages \
 |---|---|---|---|
 | `/` | Workspace + Session rail | `/m` | รายชื่อ Bot |
 | `/passport` | Bot Passport | `/m/chat` | แชต + Approval |
-| `/runs/run_0412` | Run Inspector | `/m/side-chat` | Side chat |
+| `/runs/latest` · `/runs/:id` | Run Inspector | `/m/side-chat` | Side chat |
 | `/side-chat` | Side Chat | `/m/rail` | Session rail |
 | `/fork` | Fork Session | `/m/fork` | Fork Session |
 | `/artifacts` | Artifacts | `/m/passport` | Bot Passport |
@@ -336,7 +351,7 @@ curl -s localhost:8787/api/bots/sales-outbound/messages \
 
 </details>
 
-> หน้าที่ต่อ backend แล้วตอนนี้คือ Workspace (`/`) หน้าอื่นแสดงข้อมูลตัวอย่างตามดีไซน์ ค่าที่ดีไซน์ยังไม่ระบุจะเป็น `[placeholder]`
+> หน้าที่ต่อ backend แล้ว: Workspace, Bot Passport, Run Inspector และ MCP Connectors หน้าอื่นแสดงข้อมูลตัวอย่างตามดีไซน์ ค่าที่ดีไซน์ยังไม่ระบุจะเป็น `[placeholder]`
 
 ---
 
@@ -349,7 +364,7 @@ es-bot/
 │   ├── components/layout/      DesktopPage, PageHeader, MobileScreen, MobileTabBar
 │   ├── lib/                    routes, api client, useBotThread, cn
 │   └── screens/
-│       ├── desktop/            10 หน้า (workspace/ ต่อ API แล้ว)
+│       ├── desktop/            10 หน้า (4 หน้าต่อ API แล้ว)
 │       └── mobile/             10 หน้า
 ├── server/                     gateway (Node + TypeScript)
 │   ├── src/
@@ -383,7 +398,8 @@ es-bot/
 - [x] Push repo ขึ้น GitHub
 - [ ] ทดสอบกับบริการจริง: OpenRouter, LINE OA, MCP ของ Google Sheets
 - [ ] ต่อ Supabase และ ES Account auth
-- [ ] ต่อหน้า Connectors, Passport, Run Inspector และ MChat เข้ากับ API
+- [x] ต่อหน้า Connectors, Passport และ Run Inspector เข้ากับ API
+- [ ] ต่อหน้า MChat (มือถือ) เข้ากับ API
 - [ ] Deploy หน้าเว็บ (Vercel) และ gateway (Node ที่รันตลอด)
 
 ---

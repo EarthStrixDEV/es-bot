@@ -2,7 +2,8 @@
 export const routes = {
   workspace: '/',
   passport: '/passport',
-  runInspector: '/runs/run_0412',
+  /** Opens the newest run; `runPath(id)` opens a specific one. */
+  runInspector: '/runs/latest',
   sideChat: '/side-chat',
   fork: '/fork',
   artifacts: '/artifacts',
@@ -22,3 +23,5 @@ export const routes = {
   mModel: '/m/model',
   mSettings: '/m/settings',
 } as const;
+
+export const runPath = (id: string) => `/runs/${id}`;

@@ -2,12 +2,15 @@ import { timingSafeEqual } from 'node:crypto';
 import { createServer, type IncomingMessage } from 'node:http';
 import { WebSocketServer } from 'ws';
 import type { App } from '../app.js';
-import type { ApprovalDecision } from '../domain/types.js';
+import { McpClient } from '../connectors/McpClient.js';
+import { newId } from '../domain/ids.js';
+import { EFFECTS, type ApprovalDecision, type AuditEvent, type Effect, type Reversible, type TrustLevel } from '../domain/types.js';
+import { PassportError, type PassportPatch } from '../passport/PassportService.js';
 import { HttpError, RateLimiter, Router, readJson, send } from './http.js';
 
 /** Gateway: auth, rate limit, REST for commands and reads, WebSocket for the event stream. */
 export function createGateway(app: App) {
-  const { config, store, orchestrator, approvals, conversation, gateway, budget, audit, bus } = app;
+  const { config, store, orchestrator, approvals, conversation, gateway, budget, audit, bus, passports, broker } = app;
   const limiter = new RateLimiter(config.rateLimitPerMinute);
   const router = new Router();
 
@@ -26,8 +29,14 @@ export function createGateway(app: App) {
   const runView = (id: string) => {
     const run = orchestrator.run(id);
     if (!run) throw new HttpError(404, 'run not found');
+    // The request that started the run: the last user message before it was created.
+    const request = conversation
+      .messages(run.threadId)
+      .filter((m) => m.role === 'user' && m.createdAt <= run.createdAt)
+      .at(-1)?.content;
     return {
       run,
+      request,
       steps: orchestrator.steps(id),
       approvals: store.approvals.list({ runId: id }),
       checkpoints: store.checkpoints.list({ runId: id }),
@@ -35,10 +44,80 @@ export function createGateway(app: App) {
     };
   };
 
+  /** Every audit event that belongs to a run: its own, its steps', its approvals' and tool calls tagged with it. */
+  const runAudit = (id: string): AuditEvent[] => {
+    const ids = new Set([id, ...orchestrator.steps(id).map((s) => s.id), ...store.approvals.list({ runId: id }).map((a) => a.id)]);
+    return audit.list().filter((e) => ids.has(e.target) || e.meta?.runId === id);
+  };
+
+  const lastUse = (prefix: string, botId?: string) =>
+    audit
+      .list()
+      .filter((e) => e.action === 'tool.call' && e.target.startsWith(prefix) && (!botId || e.actor === `bot:${botId}`))
+      .at(-1)?.at;
+
+  /** Translate the Passport module's validation errors into 400s. */
+  const passportCall = <T>(fn: () => T): T => {
+    try {
+      return fn();
+    } catch (err) {
+      if (err instanceof PassportError) throw new HttpError(400, err.message);
+      throw err;
+    }
+  };
+
+  const parsePatch = (body: any): PassportPatch => {
+    const patch: PassportPatch = {};
+    if (body?.trust && typeof body.trust === 'object') patch.trust = body.trust as Record<string, TrustLevel>;
+    if (body?.budget && typeof body.budget === 'object') {
+      patch.budget = {};
+      for (const k of ['perRun', 'perDay'] as const) if (body.budget[k] !== undefined) patch.budget[k] = Number(body.budget[k]);
+    }
+    return patch;
+  };
+
+  const connectorView = (id: string) => {
+    const row = store.connectors.get(id);
+    if (!row) throw new HttpError(404, 'connector not found');
+    const { secretRef, ...rest } = row;
+    const tools = gateway.tools().filter((t) => t.connectorId === id);
+    return {
+      ...rest,
+      hasSecret: Boolean(secretRef),
+      tools,
+      bots: passports.botsWithAccess(id),
+      recent: audit
+        .list()
+        .filter((e) => e.action === 'tool.call' && e.target.startsWith(`${id}.`))
+        .slice(-5)
+        .reverse()
+        .map((e) => ({ at: e.at, actor: e.actor, tool: e.target })),
+    };
+  };
+
   router
     .on('GET', '/api/health', () => ({ ok: true, model: app.model.name, notifier: config.line ? 'line' : 'memory' }))
-    .on('GET', '/api/bots', () => store.bots.list())
-    .on('GET', '/api/bots/:id/passport', ({ params }) => orchestrator.passport(params.id))
+    .on('GET', '/api/bots', () => store.bots.list().map((b) => ({ ...b, hasPassport: Boolean(store.passports.get(b.id)) })))
+    .on('GET', '/api/bots/:id/passport', ({ params }) => passportCall(() => passports.get(params.id)))
+    .on('GET', '/api/bots/:id/passport/versions', ({ params }) => passports.versions(params.id))
+    .on('POST', '/api/bots/:id/passport', ({ params, body, userId }) => passportCall(() => passports.update(params.id, parsePatch(body), userId)))
+    .on('POST', '/api/bots/:id/passport/dry-run', ({ params, body }) => passportCall(() => passports.dryRun(params.id, parsePatch(body))))
+    .on('GET', '/api/bots/:id/credentials', ({ params }) => {
+      const p = passportCall(() => passports.get(params.id));
+      return store.connectors.list().map((c) => {
+        const grant = p.grants.find((g) => g.connectorId === c.id && !g.revokedAt);
+        return { connectorId: c.id, name: c.name, status: c.status, grant, lastUsed: grant ? lastUse(`${c.id}.`, params.id) : undefined };
+      });
+    })
+    .on('POST', '/api/bots/:id/grants', ({ params, body, userId }) => {
+      const scope = body?.scope as Effect;
+      const level = body?.level as TrustLevel | undefined;
+      if (typeof body?.connectorId !== 'string' || !EFFECTS.includes(scope)) throw new HttpError(400, 'connectorId and scope are required');
+      return passportCall(() => passports.grant(params.id, { connectorId: body.connectorId, scope, level }, userId));
+    })
+    .on('POST', '/api/bots/:id/grants/:connectorId/revoke', ({ params, userId }) =>
+      passportCall(() => passports.revoke(params.id, params.connectorId, userId)),
+    )
     .on('GET', '/api/bots/:id/thread', ({ params }) => {
       const thread = conversation.mainThread(params.id);
       const runs = store.runs.list({ threadId: thread.id });
@@ -51,7 +130,17 @@ export function createGateway(app: App) {
       const { message, run } = await orchestrator.handleUserMessage(params.id, text, userId);
       return { message, run: run ? runView(run.id) : undefined };
     })
+    .on('GET', '/api/runs', ({ query }) =>
+      store.runs
+        .list({ botId: query.get('botId') ?? undefined })
+        .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+        .map((r) => ({ id: r.id, botId: r.botId, status: r.status, title: r.plan?.summary, createdAt: r.createdAt })),
+    )
     .on('GET', '/api/runs/:id', ({ params }) => runView(params.id))
+    .on('GET', '/api/runs/:id/audit', ({ params }) => {
+      runView(params.id); // 404 for unknown runs
+      return runAudit(params.id);
+    })
     .on('GET', '/api/approvals', ({ query }) => (query.get('state') === 'open' ? approvals.open() : store.approvals.list()))
     .on('POST', '/api/approvals/:id/decision', async ({ params, body, userId }) => {
       const decision = body?.decision as ApprovalDecision;
@@ -64,9 +153,81 @@ export function createGateway(app: App) {
         throw new HttpError(409, String((err as Error).message));
       }
     })
-    .on('GET', '/api/connectors', () => store.connectors.list().map(({ secretRef, ...c }) => ({ ...c, hasSecret: Boolean(secretRef) })))
+    .on('GET', '/api/connectors', () => store.connectors.list().map((c) => connectorView(c.id)))
+    .on('GET', '/api/connectors/:id', ({ params }) => connectorView(params.id))
+    .on('POST', '/api/connectors', async ({ body, userId }) => {
+      const name = typeof body?.name === 'string' ? body.name.trim() : '';
+      const auth = body?.auth as 'api_key' | 'none';
+      let url: URL;
+      try {
+        url = new URL(String(body?.url ?? ''));
+      } catch {
+        throw new HttpError(400, 'Server URL ไม่ถูกต้อง');
+      }
+      if (url.protocol !== 'https:' && !(url.protocol === 'http:' && ['localhost', '127.0.0.1'].includes(url.hostname))) {
+        throw new HttpError(400, 'ต้องเป็น https (http ได้เฉพาะ localhost)');
+      }
+      if (!name || name.length > 60) throw new HttpError(400, 'ต้องมีชื่อ connector (≤ 60 ตัวอักษร)');
+      if (!['api_key', 'none'].includes(auth)) throw new HttpError(400, 'auth ต้องเป็น api_key หรือ none (OAuth ยังไม่รองรับ)');
+      if (auth === 'api_key' && !body?.apiKey) throw new HttpError(400, 'ต้องใส่ API key');
+      const secretRef = auth === 'api_key' ? broker.put(String(body.apiKey)) : undefined;
+      const id = newId('mcp');
+      const client = new McpClient(url.toString(), () => (secretRef ? broker.reveal(secretRef) : ''));
+      try {
+        await gateway.register(
+          { id, accountId: config.accountId, name, url: url.toString(), transport: 'streamable-http', authKind: auth, secretRef, status: 'connected', firstParty: false },
+          client,
+        );
+      } catch (err) {
+        store.connectors.put({ id, accountId: config.accountId, name, url: url.toString(), transport: 'streamable-http', authKind: auth, secretRef, status: 'disabled', firstParty: false });
+        throw new HttpError(502, `เชื่อมต่อไม่สำเร็จ: ${(err as Error).message}`);
+      }
+      audit.record({ actor: userId, action: 'connector.create', target: id, meta: { name, url: url.toString() } });
+      bus.emit({ type: 'connector.updated', connectorId: id });
+      return connectorView(id);
+    })
+    .on('POST', '/api/connectors/:id/test', async ({ params, userId }) => {
+      connectorView(params.id);
+      const result = await gateway.test(params.id, userId);
+      bus.emit({ type: 'connector.updated', connectorId: params.id });
+      return { ...result, connector: connectorView(params.id) };
+    })
+    .on('POST', '/api/connectors/:id/disconnect', ({ params, userId }) => {
+      connectorView(params.id);
+      gateway.disconnect(params.id, userId);
+      bus.emit({ type: 'connector.updated', connectorId: params.id });
+      return connectorView(params.id);
+    })
     .on('GET', '/api/tools', () => gateway.tools())
-    .on('POST', '/api/tools/:id/enable', ({ params, body, userId }) => gateway.enableTool(params.id, userId, body ?? undefined))
+    .on('POST', '/api/tools/:id/enable', ({ params, body, userId }) => {
+      // Only classification fields may be confirmed alongside enabling.
+      const meta: { effect?: Effect; reversible?: Reversible; taskClass?: string } = {};
+      if (body?.effect !== undefined) {
+        if (!EFFECTS.includes(body.effect)) throw new HttpError(400, 'effect ไม่ถูกต้อง');
+        meta.effect = body.effect;
+      }
+      if (body?.reversible !== undefined) {
+        if (!['yes', 'no', 'partial'].includes(body.reversible)) throw new HttpError(400, 'reversible ไม่ถูกต้อง');
+        meta.reversible = body.reversible;
+      }
+      if (typeof body?.taskClass === 'string' && /^[a-z_]{1,32}$/.test(body.taskClass)) meta.taskClass = body.taskClass;
+      try {
+        const tool = gateway.enableTool(params.id, userId, meta);
+        bus.emit({ type: 'tool.updated', tool });
+        return tool;
+      } catch (err) {
+        throw new HttpError(409, (err as Error).message);
+      }
+    })
+    .on('POST', '/api/tools/:id/disable', ({ params, userId }) => {
+      try {
+        const tool = gateway.disableTool(params.id, userId);
+        bus.emit({ type: 'tool.updated', tool });
+        return tool;
+      } catch (err) {
+        throw new HttpError(404, (err as Error).message);
+      }
+    })
     .on('GET', '/api/audit', ({ query }) => audit.list({ target: query.get('target') ?? undefined }).slice(-500));
 
   const server = createServer(async (req, res) => {

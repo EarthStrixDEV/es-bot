@@ -27,7 +27,7 @@ export function App() {
     <Routes>
       <Route path={routes.workspace} element={<Workspace />} />
       <Route path={routes.passport} element={<Passport />} />
-      <Route path={routes.runInspector} element={<RunInspector />} />
+      <Route path="/runs/:runId" element={<RunInspector />} />
       <Route path={routes.sideChat} element={<SideChat />} />
       <Route path={routes.fork} element={<Fork />} />
       <Route path={routes.artifacts} element={<Artifacts />} />

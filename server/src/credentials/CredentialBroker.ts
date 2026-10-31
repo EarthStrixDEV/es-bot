@@ -46,6 +46,14 @@ export class CredentialBroker {
     return this.decrypt(lease.secretRef);
   }
 
+  /**
+   * Server-side only: the Connector Gateway needs a connector's secret to list its tools.
+   * Never exposed through the API or to a model.
+   */
+  reveal(ref: string): string {
+    return this.decrypt(ref);
+  }
+
   private decrypt(ref: string): string {
     const row = this.store.secrets.get(ref);
     if (!row) throw new Error('ไม่พบ secret');

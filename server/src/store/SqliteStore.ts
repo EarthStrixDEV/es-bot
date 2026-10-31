@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { matches, type AppendOnly, type Collection, type Store } from './Store.js';
 
 const COLLECTIONS = [
-  'bots', 'passports', 'connectors', 'tools', 'secrets', 'threads', 'messages',
+  'bots', 'passports', 'passportVersions', 'connectors', 'tools', 'secrets', 'threads', 'messages',
   'runs', 'steps', 'checkpoints', 'approvals', 'usage',
 ] as const;
 

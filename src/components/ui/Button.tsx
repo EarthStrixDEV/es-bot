@@ -24,6 +24,7 @@ const sizes: Record<ButtonSize, string> = {
 export function buttonClass(variant: ButtonVariant = 'secondary', size: ButtonSize = 'lg', className?: string) {
   return cn(
     'inline-flex items-center justify-center gap-1.5 rounded-full border-0 cursor-pointer no-underline transition-colors whitespace-nowrap',
+    'disabled:cursor-not-allowed disabled:opacity-50',
     'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent',
     variants[variant],
     sizes[size],

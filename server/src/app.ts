@@ -17,6 +17,7 @@ import type { ModelClient } from './models/ModelClient.js';
 import { OpenRouterModel } from './models/OpenRouterModel.js';
 import { LineNotifier, MemoryNotifier, type Notifier } from './notifier/Notifier.js';
 import { Orchestrator } from './orchestrator/Orchestrator.js';
+import { PassportService } from './passport/PassportService.js';
 import { createSqliteStore } from './store/SqliteStore.js';
 import type { ConnectorRow, Store } from './store/Store.js';
 
@@ -43,10 +44,11 @@ export async function createApp(
   const approvals = new ApprovalService(store, bus, clock, notifier, audit, config.appUrl);
   const conversation = new ConversationService(store, bus, clock);
   const orchestrator = new Orchestrator(store, bus, clock, conversation, gateway, approvals, budget, audit, model);
+  const passports = new PassportService(store, bus, clock, audit, gateway);
 
   await seed({ config, store, gateway, broker, model, lineOutbox: overrides.lineOutbox });
 
-  return { config, clock, store, bus, audit, notifier, model, broker, budget, gateway, approvals, conversation, orchestrator };
+  return { config, clock, store, bus, audit, notifier, model, broker, budget, gateway, approvals, conversation, orchestrator, passports };
 }
 
 /** First-run data: the account's bots, Sales Outbound's Passport and the three MVP connectors. */
@@ -77,6 +79,7 @@ async function seed(ctx: { config: Config; store: Store; gateway: ConnectorGatew
       trust: { read: 'L3', draft: 'L3', crm_write: 'L2', send: 'L1', pay: 'L0', destroy: 'L0' },
     };
     store.passports.put({ ...passport, id: passport.botId });
+    store.passportVersions.put({ ...passport, id: `${passport.botId}@v${passport.version}` });
   }
 
   const connectors: { row: Omit<ConnectorRow, 'accountId' | 'secretRef' | 'transport' | 'url'>; mock: () => ConnectorClient }[] = [
@@ -89,10 +92,16 @@ async function seed(ctx: { config: Config; store: Store; gateway: ConnectorGatew
     const existing = store.connectors.get(c.row.id);
     const secretRef = existing?.secretRef ?? (real?.secret ? broker.put(real.secret) : undefined);
     const row: ConnectorRow = { ...c.row, accountId, url: real?.url ?? `builtin://${c.row.id}`, transport: real ? 'streamable-http' : 'builtin', secretRef };
-    const client = real ? new McpClient(real.url, real.secret) : c.mock();
+    const client = real ? new McpClient(real.url, real.secret ?? '') : c.mock();
     // Builtins ship with confirmed metadata; real MCP tools wait for a person in the Connectors screen.
     await gateway.register(row, client, { autoEnable: !real });
   }
+  // Custom MCP connectors added at runtime: reattach their clients (tools keep their reviewed state).
+  for (const row of store.connectors.list()) {
+    if (row.transport !== 'streamable-http' || config.mcp[row.id]) continue;
+    gateway.attach(row.id, new McpClient(row.url, () => (row.secretRef ? broker.reveal(row.secretRef) : '')));
+  }
+
   await gateway.register(
     { id: 'workspace', accountId, name: 'Workspace', url: 'builtin://workspace', transport: 'builtin', authKind: 'none', status: 'connected', firstParty: true },
     workspace(ctx.model),
