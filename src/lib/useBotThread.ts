@@ -27,6 +27,8 @@ export function useBotThread(botId: string): Live | null | 'offline' {
   const refresh = useCallback(() => api.thread(botId).then(setThread), [botId]);
 
   useEffect(() => {
+    // The hosted preview has no gateway to talk to.
+    if (import.meta.env.VITE_PREVIEW) return setOffline(true);
     let cancelled = false;
     Promise.all([api.thread(botId), api.passport(botId), api.tools()])
       .then(([t, p, tl]) => {

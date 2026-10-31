@@ -10,7 +10,8 @@
     "typecheck": "tsc -b && tsc -p server",
     "dev:server": "tsx watch server/src/main.ts",
     "start:server": "tsx server/src/main.ts",
-    "test": "node --test --import tsx --test-concurrency=1 'server/test/**/*.test.ts'"
+    "test": "node --test --import tsx --test-concurrency=1 'server/test/**/*.test.ts'",
+    "build:preview": "VITE_PREVIEW=1 vite build --outDir dist-preview && node scripts/inline-preview.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

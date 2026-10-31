@@ -3,3 +3,4 @@ dist
 *.tsbuildinfo
 server/.data
 .env
+dist-preview

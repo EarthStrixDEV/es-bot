@@ -20,6 +20,7 @@ import { MArtifact } from '@/screens/mobile/MArtifact';
 import { MImage } from '@/screens/mobile/MImage';
 import { MModel } from '@/screens/mobile/MModel';
 import { MSettings } from '@/screens/mobile/MSettings';
+import { ScreenIndex } from '@/screens/ScreenIndex';
 
 export function App() {
   return (
@@ -45,6 +46,8 @@ export function App() {
       <Route path={routes.mImage} element={<MImage />} />
       <Route path={routes.mModel} element={<MModel />} />
       <Route path={routes.mSettings} element={<MSettings />} />
+
+      <Route path="/screens" element={<ScreenIndex />} />
 
       <Route path="*" element={<Navigate to={routes.workspace} replace />} />
     </Routes>
