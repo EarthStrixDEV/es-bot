@@ -32,11 +32,11 @@
 - ง่ายขึ้น: key เดียว, เลือก/เปลี่ยนโมเดลด้วย model id, Verifier (เฟส 3) ใช้โมเดลคนละตัวได้ง่ายเพราะอยู่ใน catalog เดียว
 - ยากขึ้น: ทุก prompt ออกนอกบ้านผ่าน OpenRouter — กฎ Allowlist "ข้อมูลลูกค้าห้ามออกนอกบ้าน → local model" ในเอกสารทำไม่ได้แล้ว
   ถ้าต้องการต้องเปิด ADR ใหม่ หรือใช้ provider routing ของ OpenRouter (เช่น จำกัด provider ที่ไม่เก็บข้อมูล) แทน
-- ต้องกลับมาดู: คำถาม "Data residency" ในเอกสาร และหน้า Model Selector ที่ยังแสดง "Local model"
+- ต้องกลับมาดู: คำถาม "Data residency" ในเอกสาร (หน้า Model Selector เอา "Local model" ออกแล้ว)
 
 ## Action Items
 
 1. [x] เปลี่ยน `OpenAICompatibleModel` เป็น `OpenRouterModel` + fallback models
 2. [x] อัปเดต config, `.env.example`, README
 3. [ ] ตั้ง provider routing (data policy) ของ OpenRouter เมื่อตอบเรื่อง data residency แล้ว
-4. [ ] เอา "Local model" ออกจากหน้า Model Selector (desktop + mobile) — รอพี่ยืนยัน
+4. [x] เอา "Local model" ออกจากหน้า Model Selector (desktop + mobile)

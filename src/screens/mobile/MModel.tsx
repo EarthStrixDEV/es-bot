@@ -13,7 +13,6 @@ const models = [
   { id: 'sonnet', name: 'Claude Sonnet 5.5', note: 'เขียน งานทั่วไป', price: '[฿/งาน]' },
   { id: 'haiku', name: 'Claude Haiku 5.5', note: 'เร็ว ค้นและสรุป', price: '[฿/งาน]' },
   { id: 'grok', name: 'Grok 4.6', note: 'ผู้ให้บริการอื่น', price: '[฿/งาน]' },
-  { id: 'local', name: 'Local model', note: 'รันบนเครื่องพี่', price: 'ฟรี' },
 ];
 
 const scopes = [

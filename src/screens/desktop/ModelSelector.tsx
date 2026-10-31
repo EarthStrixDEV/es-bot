@@ -11,7 +11,6 @@ const models = [
   { id: 'sonnet', name: 'Claude Sonnet 5.5', use: 'เขียนข้อความ งานทั่วไป', cost: 'สมดุล · [฿/งาน]' },
   { id: 'haiku', name: 'Claude Haiku 5.5', use: 'ค้นข้อมูล สรุป จัดหมวด', cost: 'เร็ว · [฿/งาน]' },
   { id: 'grok', name: 'Grok 4.6', use: 'ทางเลือกจากผู้ให้บริการอื่น', cost: '[฿/งาน]' },
-  { id: 'local', name: 'Local model', use: 'รันบนเครื่องพี่ ข้อมูลไม่ออกนอกบ้าน', cost: 'ฟรี · ช้ากว่า' },
 ];
 
 const pinScopes = [
